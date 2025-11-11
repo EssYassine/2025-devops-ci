@@ -1,5 +1,13 @@
 Welcome to your new TanStack app!
 
+## 📖 Documentation du laboratoire
+
+Tous les exercices du laboratoire sont documentés dans le fichier [documentation.md](./documentation.md).  
+Vous y trouverez :  
+- Objectifs de chaque exercice/partie
+- Scripts et commandes Docker  
+- Résultats attendus
+
 # Getting Started
 
 This project uses **pnpm** as the package manager instead of npm. If you're new to Node.js, pnpm is a faster and more efficient alternative to npm that saves disk space by sharing packages between projects.
