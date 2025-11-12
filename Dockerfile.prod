@@ -1,0 +1,40 @@
+# =========================
+# Étape 1 : Build de l’application
+# =========================
+FROM node:20-alpine AS builder
+
+# Créer un utilisateur non-root
+RUN adduser -D appuser
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Installer pnpm (en root)
+RUN npm install -g pnpm
+
+# Copier les fichiers de dépendances
+COPY package.json pnpm-lock.yaml ./
+
+# Installer les dépendances (sans cache)
+RUN pnpm install --frozen-lockfile
+
+# Copier tout le projet
+COPY . .
+
+# Construire le projet (Vite)
+RUN pnpm run build
+
+
+# =========================
+# Étape 2 : Image de production (Nginx)
+# =========================
+FROM nginx:alpine
+
+# Copier le build du frontend vers Nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Exposer le port 80
+EXPOSE 80
+
+# Lancer Nginx
+CMD ["nginx", "-g", "daemon off;"]

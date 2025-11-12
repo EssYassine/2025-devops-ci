@@ -117,4 +117,145 @@ VITE v7.1.12  ready in 3207 ms
 
 &nbsp;
 
-### 🐋 2. Configuration de Docker Compose
+### 🐋 2. Configuration Docker – Multi-Stage Build
+#### Contexte :
+
+L’application front-end (Vite / React) fonctionne désormais dans un conteneur Docker pour le développement (`devops-ci`).
+
+Nous allons maintenant créer une image de production plus légère et sécurisée, en utilisant un multi-stage build.
+
+#### Objectif :
+
+Créer une **image Docker optimisée** pour la production :
+
+- Réduire la taille de l’image finale
+
+- Ne pas inclure les dépendances de développement
+
+- Servir le build React/Vite via Nginx
+
+- Ne pas tourner en root
+
+#### Étape 1 – Création du Dockerfile de production :
+À la racine du projet :
+```bash
+nano Dockerfile.prod
+```
+
+Fichier : `Dockerfile.prod`
+
+```dockerfile
+# =========================
+# Étape 1 : Build de l’application
+# =========================
+FROM node:20-alpine AS builder
+
+# Créer un utilisateur non-root
+RUN adduser -D appuser
+
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Installer pnpm (en root)
+RUN npm install -g pnpm
+
+# Copier les fichiers de dépendances
+COPY package.json pnpm-lock.yaml ./
+
+# Installer les dépendances (sans cache)
+RUN pnpm install --frozen-lockfile
+
+# Copier tout le projet
+COPY . .
+
+# Construire le projet (Vite)
+RUN pnpm run build
+
+
+# =========================
+# Étape 2 : Image de production (Nginx)
+# =========================
+FROM nginx:alpine
+
+# Copier le build du frontend vers Nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Exposer le port 80
+EXPOSE 80
+
+# Lancer Nginx
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+#### Étape 2 – Construction de l’image :
+
+```bash
+docker build -t devops-ci-prod -f Dockerfile.prod .
+```
+
+Cette commande :
+
+- Utilise le **Dockerfile.prod**
+
+- Construit l’application dans une image temporaire `builder`
+
+- Copie uniquement les fichiers du dossier `dist` dans l’image finale basée sur `nginx:alpine`
+
+#### Étape 3 – Lancement du conteneur :
+
+```bash
+docker run -d -p 8080:80 devops-ci-prod
+```
+
+Vérification :
+
+```bash
+docker ps
+```
+
+Accéder à l’application :
+👉 http://localhost:8080
+
+#### Points importants :
+
+- Stage 1 - builder
+    
+    - Contient tout le code source + dépendances
+
+    - Compile le frontend Vite/React
+
+    - Ne sera pas inclus dans l’image finale
+
+- Stage 2 – production
+    
+    - Image légère basée sur `nginx:alpine` (~20 Mo)
+
+    - Contient uniquement les fichiers compilés (`dist`)
+
+    - Sert l’application avec Nginx
+
+    - Aucun node_modules ni fichier source inclus
+
+- Sécurité / non-root
+    
+    - Nginx dans l’image Alpine tourne déjà comme utilisateur non-root par défaut
+
+    - Aucun utilisateur root n’exécute le serveur
+
+- Résumé 
+    | Étape          | Image utilisée   | Rôle                                   | Contenu final              |
+    | -------------- | ---------------- | -------------------------------------- | -------------------------- |
+    | 1️⃣ Builder    | `node:20-alpine` | Compilation du code source             | supprimé après build       |
+    | 2️⃣ Production | `nginx:alpine`   | Sert uniquement les fichiers statiques | ✅ plus légère et sécurisée |
+
+#### Avantages du multi-stage build :
+
+- Image finale beaucoup plus **légère**
+
+- Code source et dépendances de développement **non exposés**
+
+- Plus **rapide à déployer**
+
+- Compatible avec CI/CD et conteneurisation complète
+
+&nbsp;
