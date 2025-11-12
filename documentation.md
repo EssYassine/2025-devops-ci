@@ -10,8 +10,8 @@
 
 
 ## ⚙️ Configuration initiale
-Avant de commencer :
 
+Avant de commencer :
 ```bash
 sudo apt update
 sudo apt install docker.io git -y
@@ -19,6 +19,7 @@ sudo systemctl enable --now docker
 git clone https://github.com/Anthony-Jhoiro/2025-devops-ci.git
 cd 2025-devops-ci
 ```
+
 Vérification :
 ```bash
 docker --version
@@ -27,8 +28,11 @@ git --version
 
 &nbsp;
 
+
 ## Partie 1 – configuration Docker
+
 ### 🐋 1. Création d'un fichier Dockerfile
+
 #### Objectif :
 
 Créer un Dockerfile pour l’application React / Vite, capable de :
@@ -44,7 +48,6 @@ Créer un Dockerfile pour l’application React / Vite, capable de :
 - **Port exposé :** `3000`
 
 - **Utilisateur non-root** pour exécuter l’application
-
 
 - Le conteneur doit être exécutable avec une seule commande `docker run`
 
@@ -87,27 +90,32 @@ CMD ["pnpm", "dev", "--host", "0.0.0.0"]
 ```
 
 #### Construction et exécution du conteneur :
-```bash
-# Construire l'image Docker
-docker build -t devops-ci .
 
-# Lancer le conteneur et mapper le port 3000
-docker run -it -p 3000:3000 devops-ci
-```
+- **Utilisation :** ce Dockerfile démarre le serveur Vite en mode développement (port 3000)
+
+- **Commande à tester :** 
+    ```bash
+    # Construire l'image Docker
+    docker build -t devops-ci .
+
+    # Lancer le conteneur et mapper le port 3000
+    docker run -it -p 3000:3000 devops-ci
+    ```
 
 #### Résultat attendu :
-Le conteneur démarre et affiche dans les logs :
-```bash
-> todo-app@ dev /app
-> vite dev --port 3000 --host 0.0.0.0
+- Le conteneur démarre et affiche dans les logs :
+    ```bash
+    > todo-app@ dev /app
+    > vite dev --port 3000 --host 0.0.0.0
 
-VITE v7.1.12  ready in 3207 ms
+    VITE v7.1.12  ready in 3207 ms
 
-➜  Local:   http://localhost:3000/
-➜  Network: use --host to expose
-```
+    ➜  Local:   http://localhost:3000/
+    ➜  Network: use --host to expose
+    ```
 - L’application est accessible sur le navigateur à http://localhost:3000
 - Les fichiers sont exécutés par l’utilisat **non-root**
+- L’erreur “Something went wrong!” est normale ici (pas de backend connecté)
 
 #### Remarques :
 
@@ -118,6 +126,7 @@ VITE v7.1.12  ready in 3207 ms
 &nbsp;
 
 ### 🐋 2. Configuration Docker – Multi-Stage Build
+
 #### Contexte :
 
 L’application front-end (Vite / React) fonctionne désormais dans un conteneur Docker pour le développement (`devops-ci`).
@@ -204,7 +213,7 @@ Cette commande :
 #### Étape 3 – Lancement du conteneur :
 
 ```bash
-docker run -d -p 8080:80 devops-ci-prod
+docker run -it -p 8080:80 devops-ci-prod
 ```
 
 Vérification :
@@ -259,3 +268,4 @@ Accéder à l’application :
 - Compatible avec CI/CD et conteneurisation complète
 
 &nbsp;
+
